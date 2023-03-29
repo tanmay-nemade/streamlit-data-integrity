@@ -1,8 +1,17 @@
 {
-"SnowflakePOC":{
+"Mandar":{
     "sfAccount" : "nq94943.ap-south-1.aws",
     "sfUser" : "mathavale",
     "sfPass" : "Infosys123",
+    "sfRole" : "accountadmin",
+    "sfWarehouse" : "compute_wh",
+    "sfDB" : "snowflake",
+    "sfSchema" : "account_usage"
+},
+"Tanmay":{
+    "sfAccount" : "tc24046.ap-southeast-3.aws",
+    "sfUser" : "tanmaynemade",
+    "sfPass" : "Tanmaynemade744!",
     "sfRole" : "accountadmin",
     "sfWarehouse" : "compute_wh",
     "sfDB" : "snowflake",
