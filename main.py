@@ -2,6 +2,7 @@ import os
 import configparser
 from snowflake.snowpark import Session
 from snowflake.snowpark.functions import *
+from data_diff import connect_to_table, diff_tables
 import pandas as pd
 import streamlit as st
 
@@ -25,20 +26,22 @@ def sfAccount_selector(account):
     sfUser = config[account]['sfUser']
     sfPass = config[account]['sfPass']
     sfRole = config[account]['sfRole']
-    #sfDB = config[account]['sfDB']
-    #sfSchema = config[account]['sfSchema']
+    sfDB = config[account]['sfDB']
+    sfSchema = config[account]['sfSchema']
     sfWarehouse = config[account]['sfWarehouse']
 
     #dictionary with names and values of connection parameters
-    conn = {"account": sfAccount,
+    conn = {"driver": "snowflake",
+            "account": sfAccount,
             "user": sfUser,
             "password": sfPass,
             "role": sfRole,
-            "warehouse": sfWarehouse}
-            #"database": sfDB,
-            #"schema": sfSchema}
+            "warehouse": sfWarehouse,
+            "database": sfDB,
+            "schema": sfSchema}
+    return conn
 
-    #Create a session using the connection parameters
+def session_builder(conn):
     session = Session.builder.configs(conn).create()
     return session
 
@@ -88,7 +91,8 @@ def tables_list(chosen_db, chosen_schema, session):
     return tables_list
 
 acc_select = st.selectbox('Choose account',(accounts))
-session = sfAccount_selector(acc_select)
+conn = sfAccount_selector(acc_select)
+session = session_builder(conn)
 
 table1, table2 = st.columns(2)
 
@@ -96,16 +100,33 @@ with table1:
     st.write('Data for table 1')
     database = db_list(session)
     db_select1 = st.selectbox('Choose Database 1',(database))
+    conn["database"] = db_select1
     schemas = schemas_list(db_select1, session)
     sc_select1 = st.selectbox('Choose Schema 1',(schemas))
+    conn["schema"] = sc_select1
     tables = tables_list(db_select1,sc_select1, session)
     tb_select1 = st.selectbox('Choose table 1',(tables))
+    conn["table"] = tb_select1
+    snowflake_table1 = connect_to_table(conn, tb_select1,'NAME')
+    snowflake_table1
+
+    
 
 with table2:
     st.write('Data for table 2')
     database = db_list(session)
     db_select2 = st.selectbox('Choose Database 2',(database))
+    conn["database"] = db_select2
     schemas = schemas_list(db_select2, session)
     sc_select2 = st.selectbox('Choose Schema 2',(schemas))
+    conn["schema"] = sc_select2
     tables = tables_list(db_select2,sc_select2, session)
     tb_select2 = st.selectbox('Choose table 2',(tables))
+    conn["table"] = tb_select2
+    snowflake_table2 = connect_to_table(conn, tb_select2,'NAME')
+    snowflake_table2
+
+st.write('Different rows are:')
+for different_row in diff_tables(snowflake_table1, snowflake_table2):
+    plus_or_minus, columns = different_row
+    st.write(plus_or_minus, columns)
