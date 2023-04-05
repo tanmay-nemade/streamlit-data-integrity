@@ -108,7 +108,6 @@ with table1:
     tb_select1 = st.selectbox('Choose Destination Table',(tables))
     conn["table"] = tb_select1
     snowflake_table1 = connect_to_table(conn, tb_select1,'Name')
-    snowflake_table1
 
     
 
@@ -124,7 +123,6 @@ with table2:
     tb_select2 = st.selectbox('Choose Source table',(tables))
     conn["table"] = tb_select2
     snowflake_table2 = connect_to_table(conn, tb_select2,'Name')
-    snowflake_table2
 
 st.write('Different rows are:')
 for different_row in diff_tables(snowflake_table1, snowflake_table2):
