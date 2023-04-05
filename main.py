@@ -97,36 +97,45 @@ session = session_builder(conn)
 table1, table2 = st.columns(2)
 
 with table1:
-    st.write('Data for table 1')
+    st.write('Data for Destination Table')
     database = db_list(session)
-    db_select1 = st.selectbox('Choose Database 1',(database))
+    db_select1 = st.selectbox('Choose Destination Database',(database))
     conn["database"] = db_select1
     schemas = schemas_list(db_select1, session)
-    sc_select1 = st.selectbox('Choose Schema 1',(schemas))
+    sc_select1 = st.selectbox('Choose Destination Schema',(schemas))
     conn["schema"] = sc_select1
     tables = tables_list(db_select1,sc_select1, session)
-    tb_select1 = st.selectbox('Choose table 1',(tables))
+    tb_select1 = st.selectbox('Choose Destination Table',(tables))
     conn["table"] = tb_select1
-    snowflake_table1 = connect_to_table(conn, tb_select1,'NAME')
+    snowflake_table1 = connect_to_table(conn, tb_select1,'Name')
     snowflake_table1
 
     
 
 with table2:
-    st.write('Data for table 2')
+    st.write('Data for Source Table')
     database = db_list(session)
-    db_select2 = st.selectbox('Choose Database 2',(database))
+    db_select2 = st.selectbox('Choose Source Database',(database))
     conn["database"] = db_select2
     schemas = schemas_list(db_select2, session)
-    sc_select2 = st.selectbox('Choose Schema 2',(schemas))
+    sc_select2 = st.selectbox('Choose Source Schema',(schemas))
     conn["schema"] = sc_select2
     tables = tables_list(db_select2,sc_select2, session)
-    tb_select2 = st.selectbox('Choose table 2',(tables))
+    tb_select2 = st.selectbox('Choose Source table',(tables))
     conn["table"] = tb_select2
-    snowflake_table2 = connect_to_table(conn, tb_select2,'NAME')
+    snowflake_table2 = connect_to_table(conn, tb_select2,'Name')
     snowflake_table2
 
 st.write('Different rows are:')
 for different_row in diff_tables(snowflake_table1, snowflake_table2):
     plus_or_minus, columns = different_row
-    st.write(plus_or_minus, columns)
+    if plus_or_minus == '-':
+        query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(db_select1,sc_select1,tb_select1,columns[0])
+        data = session.sql(query).collect()
+        st.write('In Source but not in Destination')
+        st.table(data)
+    else:
+        query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(db_select2,sc_select2,tb_select2,columns[0])
+        data = session.sql(query).collect()
+        st.write('In Destination but not in Source')
+        st.table(data)
