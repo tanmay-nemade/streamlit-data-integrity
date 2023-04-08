@@ -90,6 +90,22 @@ def tables_list(chosen_db, chosen_schema, session):
     tables_list = [list(row.asDict().values())[0] for row in tables_list]
     return tables_list
 
+def table_choice(value, index):
+    st.write('Data for {} Table'.format(value))
+    database = db_list(session)
+    db_select = st.selectbox('Choose {} Database'.format(value),(database), index=index)
+    conn["database"] = db_select
+    schemas = schemas_list(db_select, session)
+    sc_select = st.selectbox('Choose {} Schema'.format(value),(schemas))
+    conn["schema"] = sc_select
+    tables = tables_list(db_select,sc_select, session)
+    tb_select = st.selectbox('Choose {} table'.format(value),(tables))
+    conn["table"] = tb_select
+    snowflake_table = connect_to_table(conn, tb_select,'Name')
+    return {'snowflake_table':snowflake_table, 'database':db_select, 'schema': sc_select, 'table':tb_select}
+
+
+
 acc_select = st.selectbox('Choose account',(accounts))
 conn = sfAccount_selector(acc_select)
 session = session_builder(conn)
@@ -97,43 +113,27 @@ session = session_builder(conn)
 table1, table2 = st.columns(2)
 
 with table1:
-    st.write('Data for Destination Table')
-    database = db_list(session)
-    db_select1 = st.selectbox('Choose Destination Database',(database))
-    conn["database"] = db_select1
-    schemas = schemas_list(db_select1, session)
-    sc_select1 = st.selectbox('Choose Destination Schema',(schemas))
-    conn["schema"] = sc_select1
-    tables = tables_list(db_select1,sc_select1, session)
-    tb_select1 = st.selectbox('Choose Destination Table',(tables))
-    conn["table"] = tb_select1
-    snowflake_table1 = connect_to_table(conn, tb_select1,'Name')
-
+    source_data = table_choice('Source',0)
+    
+with table2:
+    destination_data = table_choice('Destination',3)
     
 
-with table2:
-    st.write('Data for Source Table')
-    database = db_list(session)
-    db_select2 = st.selectbox('Choose Source Database',(database))
-    conn["database"] = db_select2
-    schemas = schemas_list(db_select2, session)
-    sc_select2 = st.selectbox('Choose Source Schema',(schemas))
-    conn["schema"] = sc_select2
-    tables = tables_list(db_select2,sc_select2, session)
-    tb_select2 = st.selectbox('Choose Source table',(tables))
-    conn["table"] = tb_select2
-    snowflake_table2 = connect_to_table(conn, tb_select2,'Name')
-
+# if st.button('Compare'):
 st.write('Different rows are:')
-for different_row in diff_tables(snowflake_table1, snowflake_table2):
+minus_df = []
+plus_df = []
+for different_row in diff_tables(source_data['snowflake_table'], destination_data['snowflake_table']):
     plus_or_minus, columns = different_row
     if plus_or_minus == '-':
-        query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(db_select1,sc_select1,tb_select1,columns[0])
-        data = session.sql(query).collect()
-        st.write('In Source but not in Destination')
-        st.table(data)
+        query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(source_data['database'],source_data['schema'],source_data['table'],columns[0])
+        data = session.sql(query).to_pandas()
+        minus_df.append(data)
     else:
-        query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(db_select2,sc_select2,tb_select2,columns[0])
-        data = session.sql(query).collect()
-        st.write('In Destination but not in Source')
-        st.table(data)
+        query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(destination_data['database'],destination_data['schema'],destination_data['table'],columns[0])
+        data = session.sql(query).to_pandas()
+        plus_df.append(data)
+st.write('In Source but not in Destination')
+st.table(pd.concat(minus_df))
+st.write('In Destination but not in Source')
+st.table(pd.concat(plus_df))
