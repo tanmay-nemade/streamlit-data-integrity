@@ -123,7 +123,7 @@ with table2:
 st.write('Different rows are:')
 minus_df = []
 plus_df = []
-for different_row in diff_tables(source_data['snowflake_table'], destination_data['snowflake_table']):
+for different_row in diff_tables(source_data['snowflake_table'], destination_data['snowflake_table'],bisection_factor=2):
     plus_or_minus, columns = different_row
     if plus_or_minus == '-':
         query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(source_data['database'],source_data['schema'],source_data['table'],columns[0])
@@ -134,6 +134,6 @@ for different_row in diff_tables(source_data['snowflake_table'], destination_dat
         data = session.sql(query).to_pandas()
         plus_df.append(data)
 st.write('In Source but not in Destination')
-st.table(pd.concat(minus_df))
+st.table(pd.concat(minus_df, ignore_index=True))
 st.write('In Destination but not in Source')
-st.table(pd.concat(plus_df))
+st.table(pd.concat(plus_df, ignore_index=True))
