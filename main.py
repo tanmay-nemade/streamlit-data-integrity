@@ -41,29 +41,31 @@ def sfAccount_selector(account):
             "schema": sfSchema}
     return conn
 
+@st.cache_resource
 def session_builder(conn):
     session = Session.builder.configs(conn).create()
     return session
 
-def db_list(session):
-    dbs = session.sql("show databases ;").collect()
+@st.cache_resource 
+def db_list(_session):
+    dbs = _session.sql("show databases ;").collect()
     #db_list = dbs.filter(col('name') != 'SNOWFLAKE')
     db_list = [list(row.asDict().values())[1] for row in dbs]
     return db_list
 
-
-def schemas_list(chosen_db, session):
+@st.cache_resource
+def schemas_list(chosen_db, _session):
     # .table() tells us which table we want to select
     # col() refers to a column
     # .select() allows us to chose which column(s) we want
     # .filter() allows us to filter on coniditions
     # .distinct() means removing duplicates
     
-    session.sql('use database :chosen_db;')
+    _session.sql('use database :chosen_db;')
     fq_schema_name = chosen_db+'.information_schema.tables'
     
 
-    schemas = session.table(fq_schema_name)\
+    schemas = _session.table(fq_schema_name)\
             .select(col("table_schema"),col("table_catalog"),col("table_type"))\
             .filter(col('table_schema') != 'INFORMATION_SCHEMA')\
             .filter(col('table_type') == 'BASE TABLE')\
@@ -77,11 +79,12 @@ def schemas_list(chosen_db, session):
     schemas_list = [list(row.asDict().values())[0] for row in schemas_list]
     return schemas_list
 
-def tables_list(chosen_db, chosen_schema, session):
+@st.cache_resource
+def tables_list(chosen_db, chosen_schema, _session):
 
     fq_schema_name = chosen_db+'.information_schema.tables'
     #tables = session.table('sf_demo.information_schema.tables')\
-    tables = session.table(fq_schema_name)\
+    tables = _session.table(fq_schema_name)\
         .select(col('table_name'), col('table_schema'), col('table_type') )\
         .filter(col('table_schema') == chosen_schema)\
         .filter(col('table_type') == 'BASE TABLE')\
@@ -90,6 +93,7 @@ def tables_list(chosen_db, chosen_schema, session):
     tables_list = [list(row.asDict().values())[0] for row in tables_list]
     return tables_list
 
+@st.cache_resource(experimental_allow_widgets=True)
 def table_choice(value, index):
     st.write('Data for {} Table'.format(value))
     database = db_list(session)
