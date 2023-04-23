@@ -101,7 +101,8 @@ def table_choice(value, index):
     tables = tables_list(db_select,sc_select, session)
     tb_select = st.selectbox('Choose {} table'.format(value),(tables))
     conn["table"] = tb_select
-    snowflake_table = connect_to_table(conn, tb_select,'Name')
+    key_id = st.text_input('Key Id for {} table'.format(value))
+    snowflake_table = connect_to_table(conn, tb_select,key_id)
     return {'snowflake_table':snowflake_table, 'database':db_select, 'schema': sc_select, 'table':tb_select}
 
 
@@ -119,21 +120,21 @@ with table2:
     destination_data = table_choice('Destination',3)
     
 
-# if st.button('Compare'):
-st.write('Different rows are:')
-minus_df = []
-plus_df = []
-for different_row in diff_tables(source_data['snowflake_table'], destination_data['snowflake_table']):
-    plus_or_minus, columns = different_row
-    if plus_or_minus == '-':
-        query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(source_data['database'],source_data['schema'],source_data['table'],columns[0])
-        data = session.sql(query).to_pandas()
-        minus_df.append(data)
-    else:
-        query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(destination_data['database'],destination_data['schema'],destination_data['table'],columns[0])
-        data = session.sql(query).to_pandas()
-        plus_df.append(data)
-st.write('In Source but not in Destination')
-st.table(pd.concat(minus_df, ignore_index=True))
-st.write('In Destination but not in Source')
-st.table(pd.concat(plus_df, ignore_index=True))
+if st.button('Compare'):
+    st.write('Different rows are:')
+    minus_df = []
+    plus_df = []
+    for different_row in diff_tables(source_data['snowflake_table'], destination_data['snowflake_table']):
+        plus_or_minus, columns = different_row
+        if plus_or_minus == '-':
+            query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(source_data['database'],source_data['schema'],source_data['table'],columns[0])
+            data = session.sql(query).to_pandas()
+            minus_df.append(data)
+        else:
+            query = '''select * from {}.{}.{} where "Name" = '{}';'''.format(destination_data['database'],destination_data['schema'],destination_data['table'],columns[0])
+            data = session.sql(query).to_pandas()
+            plus_df.append(data)
+    st.write('In Source but not in Destination')
+    st.table(pd.concat(minus_df, ignore_index=True))
+    st.write('In Destination but not in Source')
+    st.table(pd.concat(plus_df, ignore_index=True))
